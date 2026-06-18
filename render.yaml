@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: reprank
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    # Gratis disk is vluchtig; deze schijf maakt data.json blijvend.
+    disk:
+      name: reprank-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data

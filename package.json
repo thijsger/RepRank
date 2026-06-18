@@ -1,0 +1,13 @@
+{
+  "name": "reprank-server",
+  "version": "0.1.0",
+  "description": "RepRank — online ranglijst voor de Garmin-app",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
