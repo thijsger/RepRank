@@ -5,11 +5,8 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node server.js
-    # Gratis disk is vluchtig; deze schijf maakt data.json blijvend.
-    disk:
-      name: reprank-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
-      - key: DATA_DIR
-        value: /data
+      # Plak hier (in het Render-dashboard) je Neon Postgres connection string,
+      # dan is de ranglijst blijvend. Zonder deze var draait hij op tijdelijke opslag.
+      - key: DATABASE_URL
+        sync: false
