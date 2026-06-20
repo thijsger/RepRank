@@ -7,6 +7,14 @@ const path = require("path");
 const storage = require("./store");
 
 const app = express();
+// Garmin-vriendelijk: geen etag (voorkomt lege 304-antwoorden) en geen
+// compressie/transform (Cloudflare gzip breekt de Garmin JSON-parser -> -400).
+app.set("etag", false);
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store, no-transform");
+  next();
+});
 app.use(express.json({ limit: "16kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
