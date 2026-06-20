@@ -114,6 +114,21 @@ app.post("/api/debug", (req, res) => {
 app.get("/api/debug", (_req, res) => res.json(debug.slice(0, 10)));
 app.post("/api/debug/clear", (_req, res) => { debug.length = 0; res.json({ ok: true }); });
 
+// ---- sensor-test: 4 signalen tegelijk (kanteling/accel/gyro/hr) ----
+const sensortest = [];
+app.post("/api/sensortest", (req, res) => {
+  const b = req.body || {};
+  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 300).map((n) => Math.round(Number(n) || 0)) : []);
+  sensortest.unshift({
+    at: Date.now(), name: storage.cleanName(b.name), hasGyro: Number(b.hasGyro) || 0,
+    tilt: arr("tilt"), accel: arr("accel"), gyro: arr("gyro"), hr: arr("hr"),
+  });
+  if (sensortest.length > 20) sensortest.length = 20;
+  res.json({ ok: true });
+});
+app.get("/api/sensortest", (_req, res) => res.json(sensortest.slice(0, 10)));
+app.post("/api/sensortest/clear", (_req, res) => { sensortest.length = 0; res.json({ ok: true }); });
+
 app.get("/api/health", (_req, res) => res.json({ ok: true, store: store.kind }));
 
 store.init().then(() => {
