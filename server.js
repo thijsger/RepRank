@@ -91,8 +91,8 @@ app.post("/api/tune", (req, res) => {
   tune.unshift({
     at: Date.now(), name: storage.cleanName(b.name),
     exercise: String(b.exercise || "?").slice(0, 20),
-    axis: Number(b.axis) || 0, auto: Number(b.auto) || 0, final: Number(b.final) || 0,
-    hz: Number(b.hz) || 0, gx: arr("gx"), gy: arr("gy"), gz: arr("gz"),
+    auto: Number(b.auto) || 0, final: Number(b.final) || 0,
+    gyro: arr("gyro"),
   });
   if (tune.length > 60) tune.length = 60;
   res.json({ ok: true });
