@@ -92,7 +92,7 @@ app.post("/api/tune", (req, res) => {
     at: Date.now(), name: storage.cleanName(b.name),
     exercise: String(b.exercise || "?").slice(0, 20),
     auto: Number(b.auto) || 0, final: Number(b.final) || 0,
-    gyro: arr("gyro"),
+    rx: arr("rx"), ry: arr("ry"), rz: arr("rz"),
   });
   if (tune.length > 60) tune.length = 60;
   res.json({ ok: true });
