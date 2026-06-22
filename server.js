@@ -171,6 +171,9 @@ app.post("/api/sensortest", (req, res) => {
 app.get("/api/sensortest", (_req, res) => res.json(sensortest.slice(0, 10)));
 app.post("/api/sensortest/clear", (_req, res) => { sensortest.length = 0; res.json({ ok: true }); });
 
+// privacy policy (vereist voor Connect IQ Store)
+app.get("/privacy", (_req, res) => res.sendFile(path.join(__dirname, "public", "privacy.html")));
+
 app.get("/api/health", (_req, res) => res.json({ ok: true, store: store.kind }));
 
 store.init().then(() => {
