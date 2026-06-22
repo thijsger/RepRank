@@ -15,7 +15,7 @@ app.use((req, res, next) => {
   res.set("Cache-Control", "no-store, no-transform");
   next();
 });
-app.use(express.json({ limit: "16kb" }));
+app.use(express.json({ limit: "64kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
@@ -93,6 +93,7 @@ app.post("/api/tune", (req, res) => {
     exercise: String(b.exercise || "?").slice(0, 20),
     auto: Number(b.auto) || 0, final: Number(b.final) || 0,
     rx: arr("rx"), ry: arr("ry"), rz: arr("rz"),
+    ax: arr("ax"), ay: arr("ay"), az: arr("az"),
   });
   if (tune.length > 60) tune.length = 60;
   res.json({ ok: true });
