@@ -5,6 +5,7 @@
 const express = require("express");
 const path = require("path");
 const storage = require("./store");
+const { detectReps } = require("./detect");
 
 const app = express();
 // Garmin-vriendelijk: geen etag (voorkomt lege 304-antwoorden) en geen
@@ -41,6 +42,26 @@ app.post("/api/score", async (req, res) => {
     if (!Number.isFinite(value) || value <= 0 || value > 100000) {
       return res.status(400).json({ error: "value ongeldig" });
     }
+
+    // ANTI-CHEAT: bij rep-oefeningen moet een sensor-golfvorm mee, en het
+    // geclaimde aantal mag niet ver boven wat we in het signaal detecteren.
+    // (plank is tijd, geen reps -> niet via deze weg te valideren)
+    if (exercise !== "plank") {
+      const b = req.body;
+      const wf = { rx: b.rx, ry: b.ry, rz: b.rz, ax: b.ax, ay: b.ay, az: b.az };
+      const useGyro = b.gyro === true || b.gyro === 1;
+      const detected = detectReps(wf, useGyro);
+      if (detected < 0) {
+        return res.status(400).json({ error: "geen bewijs", code: "no_proof" });
+      }
+      // ruime tolerantie: swipe-correctie + server/horloge-verschil. Alleen
+      // duidelijke inflatie (bv. 999 op een 10-rep-signaal) wordt geweigerd.
+      const allowed = Math.round(detected * 1.6) + 6;
+      if (value > allowed) {
+        return res.status(400).json({ error: "onaannemelijk", code: "implausible", detected });
+      }
+    }
+
     const result = await store.submit(userId, name, exercise, value);
     // week-totaal: tel reps op (plank is seconden, telt niet mee)
     if (exercise !== "plank") { await store.addWeekly(userId, name, value); }
