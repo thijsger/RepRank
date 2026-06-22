@@ -42,6 +42,8 @@ app.post("/api/score", async (req, res) => {
       return res.status(400).json({ error: "value ongeldig" });
     }
     const result = await store.submit(userId, name, exercise, value);
+    // week-totaal: tel reps op (plank is seconden, telt niet mee)
+    if (exercise !== "plank") { await store.addWeekly(userId, name, value); }
     const r = await store.rankOf(exercise, userId);
     res.json({ ok: true, improved: result.improved, value: r.value, rank: r.rank, total: await store.total(exercise) });
   } catch (e) {
@@ -65,6 +67,24 @@ app.get("/api/leaderboard", async (req, res) => {
     res.json({ exercise, unit: EXERCISES[exercise].unit, total: await store.total(exercise), top, me });
   } catch (e) {
     console.error("leaderboard fout:", e.message);
+    res.status(500).json({ error: "server" });
+  }
+});
+
+// week-ranglijst: totaal reps deze week (alle rep-oefeningen samen)
+app.get("/api/week", async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const top = await store.topWeekly(limit);
+    let me = null;
+    if (userId) {
+      const r = await store.rankWeekly(userId);
+      if (r.rank) me = { rank: r.rank, value: r.value };
+    }
+    res.json({ total: await store.totalWeekly(), top, me });
+  } catch (e) {
+    console.error("week fout:", e.message);
     res.status(500).json({ error: "server" });
   }
 });

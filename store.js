@@ -12,6 +12,16 @@ function cleanName(n) {
     .slice(0, 20) || "Athlete";
 }
 
+// ISO-weeknummer (maandag-start), bv "2026-W25"
+function weekKey(d = new Date()) {
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const wk = Math.ceil(((dt - yearStart) / 86400000 + 1) / 7);
+  return dt.getUTCFullYear() + "-W" + String(wk).padStart(2, "0");
+}
+
 /* ----------------------------- Postgres ----------------------------- */
 function pgStore() {
   const { Pool } = require("pg");
@@ -30,6 +40,52 @@ function pgStore() {
         updated_at BIGINT NOT NULL,
         PRIMARY KEY (user_id, exercise)
       )`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS weekly (
+        user_id TEXT NOT NULL,
+        week    TEXT NOT NULL,
+        name    TEXT NOT NULL,
+        total   INTEGER NOT NULL,
+        PRIMARY KEY (user_id, week)
+      )`);
+  }
+
+  // tel reps op bij het week-totaal van deze gebruiker
+  async function addWeekly(userId, name, reps) {
+    name = cleanName(name);
+    await pool.query(
+      `INSERT INTO weekly (user_id, week, name, total)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (user_id, week) DO UPDATE
+         SET total = weekly.total + EXCLUDED.total, name = EXCLUDED.name`,
+      [userId, weekKey(), name, reps]
+    );
+  }
+
+  async function topWeekly(limit) {
+    const r = await pool.query(
+      `SELECT name, total FROM weekly WHERE week=$1
+       ORDER BY total DESC LIMIT $2`,
+      [weekKey(), limit]
+    );
+    return r.rows.map((row, i) => ({ rank: i + 1, name: row.name, value: row.total }));
+  }
+
+  async function rankWeekly(userId) {
+    const r = await pool.query(
+      `SELECT rank, total FROM (
+         SELECT user_id, total, RANK() OVER (ORDER BY total DESC) AS rank
+         FROM weekly WHERE week=$1
+       ) t WHERE user_id=$2`,
+      [weekKey(), userId]
+    );
+    if (r.rows.length === 0) return { rank: null, value: null };
+    return { rank: Number(r.rows[0].rank), value: r.rows[0].total };
+  }
+
+  async function totalWeekly() {
+    const r = await pool.query(`SELECT COUNT(*)::int c FROM weekly WHERE week=$1`, [weekKey()]);
+    return r.rows[0].c;
   }
 
   // bewaart alleen als het een verbetering is; geeft {improved, value}
@@ -80,17 +136,18 @@ function pgStore() {
     return { rank: Number(r.rows[0].rank), value: r.rows[0].value };
   }
 
-  return { kind: "postgres", init, submit, top, total, rankOf };
+  return { kind: "postgres", init, submit, top, total, rankOf, addWeekly, topWeekly, rankWeekly, totalWeekly };
 }
 
 /* ------------------------------- JSON -------------------------------- */
 function jsonStore() {
   const DATA_DIR = process.env.DATA_DIR || __dirname;
   const DATA_PATH = path.join(DATA_DIR, "data.json");
-  let db = { scores: {} };
+  let db = { scores: {}, weekly: {} };
   try {
     db = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
     if (!db.scores) db.scores = {};
+    if (!db.weekly) db.weekly = {};
   } catch {}
   let timer = null;
   function save() {
@@ -133,7 +190,34 @@ function jsonStore() {
     }
     return { rank: null, value: null };
   }
-  return { kind: "json", init, submit, top, total, rankOf };
+  function weekEntries() {
+    const wk = weekKey();
+    return Object.values(db.weekly)
+      .filter((w) => w.week === wk)
+      .sort((a, b) => b.total - a.total);
+  }
+  async function addWeekly(userId, name, reps) {
+    name = cleanName(name);
+    const wk = weekKey();
+    const key = `${userId}|${wk}`;
+    const ex = db.weekly[key];
+    if (ex) { ex.total += reps; ex.name = name; }
+    else { db.weekly[key] = { userId, week: wk, name, total: reps }; }
+    save();
+  }
+  async function topWeekly(limit) {
+    return weekEntries().slice(0, limit).map((w, i) => ({ rank: i + 1, name: w.name, value: w.total }));
+  }
+  async function rankWeekly(userId) {
+    const list = weekEntries();
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].userId === userId) return { rank: i + 1, value: list[i].total };
+    }
+    return { rank: null, value: null };
+  }
+  async function totalWeekly() { return weekEntries().length; }
+
+  return { kind: "json", init, submit, top, total, rankOf, addWeekly, topWeekly, rankWeekly, totalWeekly };
 }
 
 module.exports = {
