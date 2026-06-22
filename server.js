@@ -54,9 +54,9 @@ app.post("/api/score", async (req, res) => {
       if (detected < 0) {
         return res.status(400).json({ error: "geen bewijs", code: "no_proof" });
       }
-      // ruime tolerantie: swipe-correctie + server/horloge-verschil. Alleen
-      // duidelijke inflatie (bv. 999 op een 10-rep-signaal) wordt geweigerd.
-      const allowed = Math.round(detected * 1.6) + 6;
+      // ruime tolerantie: de server-detectie is grof (gedecimeerde golfvorm),
+      // dus alleen duidelijke inflatie (bv. 999 zonder echte beweging) weigeren.
+      const allowed = Math.round(detected * 2.5) + 12;
       if (value > allowed) {
         return res.status(400).json({ error: "onaannemelijk", code: "implausible", detected });
       }
