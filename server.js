@@ -133,7 +133,7 @@ app.post("/api/tune", (req, res) => {
     at: Date.now(), name: storage.cleanName(b.name),
     exercise: String(b.exercise || "?").slice(0, 20),
     auto: Number(b.auto) || 0, final: Number(b.final) || 0,
-    accelN: Number(b.accelN) || 0, gyroN: Number(b.gyroN) || 0,
+    accelN: Number(b.accelN) || 0, gyroN: Number(b.gyroN) || 0, decim: Number(b.decim) || 1,
     rx: arr("rx"), ry: arr("ry"), rz: arr("rz"),
     ax: arr("ax"), ay: arr("ay"), az: arr("az"),
   });
