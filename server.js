@@ -139,9 +139,20 @@ app.post("/api/tune", (req, res) => {
     ax: arr("ax"), ay: arr("ay"), az: arr("az"),
   });
   if (tune.length > 60) tune.length = 60;
+  // blijvend opslaan in de database (voor model-training over de tijd)
+  store.saveTune(tune[0]).catch((e) => console.error("saveTune:", e.message));
   res.json({ ok: true });
 });
 app.get("/api/tune", (_req, res) => res.json(tune.slice(0, 30)));
+// alle blijvend opgeslagen tune-sets (voor mij om te trainen)
+app.get("/api/tune/all", async (_req, res) => {
+  try { res.json(await store.getTune(2000)); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.get("/api/tune/count", async (_req, res) => {
+  try { res.json({ count: await store.countTune() }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
 app.post("/api/tune/clear", (_req, res) => { tune.length = 0; res.json({ ok: true }); });
 
 app.post("/api/debug", (req, res) => {

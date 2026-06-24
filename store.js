@@ -48,6 +48,25 @@ function pgStore() {
         total   INTEGER NOT NULL,
         PRIMARY KEY (user_id, week)
       )`);
+    // blijvende tune-data (golfvorm + correctie) voor model-training
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tune (
+        id   SERIAL PRIMARY KEY,
+        at   BIGINT NOT NULL,
+        data JSONB NOT NULL
+      )`);
+  }
+
+  async function saveTune(rec) {
+    await pool.query(`INSERT INTO tune (at, data) VALUES ($1, $2)`, [rec.at || Date.now(), rec]);
+  }
+  async function getTune(limit) {
+    const r = await pool.query(`SELECT data FROM tune ORDER BY at DESC LIMIT $1`, [limit || 1000]);
+    return r.rows.map((x) => x.data);
+  }
+  async function countTune() {
+    const r = await pool.query(`SELECT COUNT(*)::int AS c FROM tune`);
+    return r.rows[0].c;
   }
 
   // tel reps op bij het week-totaal van deze gebruiker
@@ -136,7 +155,7 @@ function pgStore() {
     return { rank: Number(r.rows[0].rank), value: r.rows[0].value };
   }
 
-  return { kind: "postgres", init, submit, top, total, rankOf, addWeekly, topWeekly, rankWeekly, totalWeekly };
+  return { kind: "postgres", init, submit, top, total, rankOf, addWeekly, topWeekly, rankWeekly, totalWeekly, saveTune, getTune, countTune };
 }
 
 /* ------------------------------- JSON -------------------------------- */
@@ -217,7 +236,11 @@ function jsonStore() {
   }
   async function totalWeekly() { return weekEntries().length; }
 
-  return { kind: "json", init, submit, top, total, rankOf, addWeekly, topWeekly, rankWeekly, totalWeekly };
+  const _tune = [];
+  async function saveTune(rec) { _tune.unshift(rec); }
+  async function getTune(limit) { return _tune.slice(0, limit || 1000); }
+  async function countTune() { return _tune.length; }
+  return { kind: "json", init, submit, top, total, rankOf, addWeekly, topWeekly, rankWeekly, totalWeekly, saveTune, getTune, countTune };
 }
 
 module.exports = {
