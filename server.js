@@ -134,6 +134,7 @@ app.post("/api/tune", (req, res) => {
     exercise: String(b.exercise || "?").slice(0, 20),
     auto: Number(b.auto) || 0, final: Number(b.final) || 0,
     ver: String(b.ver || "?").slice(0, 20),
+    nProc: Number(b.nProc) || 0, durMs: Number(b.durMs) || 0,
     labels: (b.labels && typeof b.labels === "object") ? b.labels : {},
     tempo: String((b.labels && b.labels.tempo) || b.tempo || "?").slice(0, 12),
     accelN: Number(b.accelN) || 0, gyroN: Number(b.gyroN) || 0, decim: Number(b.decim) || 1,
