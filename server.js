@@ -16,7 +16,7 @@ app.use((req, res, next) => {
   res.set("Cache-Control", "no-store, no-transform");
   next();
 });
-app.use(express.json({ limit: "64kb" }));
+app.use(express.json({ limit: "256kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
@@ -128,7 +128,7 @@ const debug = [];
 
 app.post("/api/tune", (req, res) => {
   const b = req.body || {};
-  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 400).map((n) => Math.round(Number(n) || 0)) : []);
+  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 1500).map((n) => Math.round(Number(n) || 0)) : []);
   tune.unshift({
     at: Date.now(), name: storage.cleanName(b.name),
     exercise: String(b.exercise || "?").slice(0, 20),
@@ -161,7 +161,7 @@ app.post("/api/tune/clear", (_req, res) => { tune.length = 0; res.json({ ok: tru
 
 app.post("/api/debug", (req, res) => {
   const b = req.body || {};
-  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 400).map((n) => Math.round(Number(n) || 0)) : []);
+  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 1500).map((n) => Math.round(Number(n) || 0)) : []);
   debug.unshift({
     at: Date.now(), name: storage.cleanName(b.name), exercise: String(b.exercise || "?").slice(0, 20),
     hz: Number(b.hz) || 0, samples: Number(b.samples) || 0, min: Number(b.min) || 0,
@@ -177,7 +177,7 @@ app.post("/api/debug/clear", (_req, res) => { debug.length = 0; res.json({ ok: t
 const sensortest = [];
 app.post("/api/sensortest", (req, res) => {
   const b = req.body || {};
-  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 400).map((n) => Math.round(Number(n) || 0)) : []);
+  const arr = (k) => (Array.isArray(b[k]) ? b[k].slice(0, 1500).map((n) => Math.round(Number(n) || 0)) : []);
   sensortest.unshift({
     at: Date.now(), name: storage.cleanName(b.name), hasGyro: Number(b.hasGyro) || 0,
     tilt: arr("tilt"), accel: arr("accel"), gyro: arr("gyro"), hr: arr("hr"),
